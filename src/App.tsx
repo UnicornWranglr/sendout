@@ -85,55 +85,11 @@ export default function App() {
     setError('')
     setOutput('')
 
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-    if (!apiKey) {
-      setError('API key not configured. Create a .env file with VITE_ANTHROPIC_API_KEY=your_key.')
-      setIsGenerating(false)
-      return
-    }
-
-    const prompt = `You are a senior recruitment consultant writing a professional update to a client contact.
-
-Here is the context:
-
-Client contact name: ${form.clientName}
-Hiring company: ${form.hiringCompany}
-Role being recruited: ${form.roleTitle}
-
-Key requirements for the role:
-${form.keyRequirements}
-
-This week's recruitment activity (raw notes):
-${form.weeklyActivity}
-${form.marketObservations ? `\nMarket observations:\n${form.marketObservations}` : ''}
-
-Write a polished, professional client update. Guidelines:
-- Open with a brief subject line (prefix with "Subject: ")
-- Start with a warm but professional opener addressed to ${form.clientName}
-- Summarise the week's activity clearly and concisely — what was done, who was approached, where the pipeline stands
-- Flag any standout candidates or notable progress with appropriate enthusiasm but measured language
-- If market observations were provided, weave them in naturally as valuable intel
-- Close with a confident next-steps statement
-- Sign off as the consultant (no name needed — just "Best regards," and leave a blank line)
-- Tone: consultative, confident, direct. Not salesy. Not overly formal. Like a trusted advisor giving a meaningful update.
-- Length: 150–250 words. Concise is better.
-
-Output only the update — no commentary, no explanation.`
-
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1024,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
       })
 
       if (!res.ok) {
@@ -141,8 +97,8 @@ Output only the update — no commentary, no explanation.`
         throw new Error((body as { error?: { message?: string } }).error?.message ?? `Request failed (${res.status})`)
       }
 
-      const data = await res.json() as { content: { text: string }[] }
-      setOutput(data.content[0].text)
+      const data = (await res.json()) as { text: string }
+      setOutput(data.text)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
